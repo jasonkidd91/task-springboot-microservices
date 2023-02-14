@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Simple Springboot Microservice Test UI</title>
+    <style>
+    </style>
+</head>
+
+<body>
+    Simple-CRUD-Service Endpoint: <input id="add-url-input" value="http://localhost:7001"> <button
+        id="add-test-btn">Test</button><br />
+    Simple-Search-Service Endpoint: <input id="search-url-input" value="http://localhost:7002"> <button
+        id="search-test-btn">Test</button><br />
+
+    <br />
+    <hr />
+
+    <p>[1] - Simple CRUD Service:</p>
+    <input id="number-input" type="number" placeholder="key in number"> <button id="number-add-btn">+</button> <button
+        id="number-random-btn">Random</button> <button id="number-clear-btn">Clear</button><br />
+    numbers: <span id="number-display"></span><br />
+    <button id="number-submit-btn">Submit</button><br />
+
+    <br />
+    <hr />
+
+    <p>[2] - Simple Search Service:</p>
+    <button id="get-all-btn">Get All from Database</button> <button id="delete-all-btn">Delete All from
+        Database</button><br />
+    <textarea id="search-result" rows="25" cols="40" placeholder="api results" disabled></textarea><br />
+    <button id="clear-search-btn">Clear</button><br />
+
+    <br />
+    <hr />
+
+    <script src="./jquery-3.4.1.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var numbers = [];
+
+            $("#add-url-input, #search-url-input").focusout(function (event) {
+                var url = event.target.value;
+                if (url.endsWith("/")) {
+                    event.target.value = url.substring(0, url.length - 1);
+                }
+            });
+
+            $("#add-test-btn").click(function (event) {
+                var url = document.getElementById("add-url-input").value + '/';
+                event.preventDefault();
+                http_calls(url, 'GET').then((res) => {
+                    alert(res)
+                }, err => {
+                    alert("Failed to connect to " + url)
+                });
+            });
+
+            $("#number-input").on('keyup', function (event) {
+                if (event.keyCode == 13) {
+                    $("#number-add-btn").click();
+                } else {
+                    var val = event.target.value;
+                    if (!val) { return false; }
+                }
+            });
+
+            $("#number-add-btn").click(function (event) {
+                var val = document.getElementById("number-input").value;
+                if (val) {
+                    numbers.push(val);
+                    document.getElementById("number-display").innerHTML = "[ " + numbers.join(", ") + " ]";
+                    document.getElementById("number-input").value = '';
+                    $("#number-input").focus();
+                }
+            });
+
+            $("#number-random-btn").click(function (event) {
+                var randoms = [];
+                while (randoms.length < 5) {
+                    let r = Math.floor(Math.random() * 50) + 1;
+                    if (!randoms.some(function (i) { return i === r; })) { randoms.push(r); }
+                }
+                numbers = randoms;
+                document.getElementById("number-display").innerHTML = "[ " + numbers.join(", ") + " ]";
+            });
+
+            $("#number-clear-btn").click(function (event) {
+                numbers = [];
+                document.getElementById("number-display").innerHTML = '';
+            });
+
+            $("#number-submit-btn").click(function (event) {
+                var url = document.getElementById("add-url-input").value + '/create';
+                event.preventDefault();
+                http_calls(url, 'POST', JSON.stringify(numbers)).then(res => {
+                    alert(res);
+                }, err => {
+                    console.error(err);
+                    if (err.responseText) {
+                        alert(err.responseText)
+                    } else {
+                        alert("Failed to connect to " + url)
+                    }
+                });
+            });
+
+            $("#search-test-btn").click(function (event) {
+                var url = document.getElementById("search-url-input").value + '/';
+                event.preventDefault();
+                http_calls(url, 'GET').then((res) => {
+                    alert(res)
+                }, err => {
+                    alert("Failed to connect to " + url)
+                });
+            });
+
+            $("#get-all-btn").click(function (event) {
+                var url = document.getElementById("search-url-input").value + '/search';
+                event.preventDefault();
+                http_calls(url, 'GET').then(res => {
+                    render("search-result", JSON.stringify(res));
+                }, err => {
+                    console.error(err);
+                    alert("Failed to connect to " + url)
+                });
+            });
+
+            $("#delete-all-btn").click(function (event) {
+                var url = document.getElementById("add-url-input").value + '/delete';
+                event.preventDefault();
+                http_calls(url, 'DELETE').then(res => {
+                    alert(res);
+                }, err => {
+                    console.error(err);
+                    alert("Failed to connect to " + url)
+                });
+            });
+
+            $("#clear-search-btn").click(function (event) {
+                event.preventDefault();
+                render("search-result", "");
+            });
+
+            function http_calls(url, method, payload) {
+                console.info(`requesting: ${url}, method: ${method}, payload: ${payload}`);
+                return new Promise(function (resolve, reject) {
+                    $.ajax({
+                        url: url,
+                        type: method,
+                        contentType: 'application/json',
+                        data: payload,
+                        success: function (res) { resolve(res); },
+                        error: function (err) { reject(err); }
+                    });
+                });
+            }
+
+            function render(id, content) {
+                if (id === "search-result") {
+                    document.getElementById(id).value = content;
+                } else {
+                    document.getElementById(id).innerHTML = content;
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
